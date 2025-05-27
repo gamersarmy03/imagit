@@ -210,11 +210,18 @@
             margin: 20px 0;
             transition: all 0.3s ease;
             background: rgba(102, 126, 234, 0.05);
+            cursor: pointer;
+            user-select: none;
         }
 
         .file-drop-zone:hover {
             border-color: #667eea;
             background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .file-drop-zone:active {
+            transform: scale(0.98);
         }
 
         .file-drop-zone.dragover {
@@ -413,19 +420,33 @@
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
 
-        dropZone.addEventListener('click', () => fileInput.click());
+        // Make sure file input triggers when drop zone is clicked
+        dropZone.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        // Also trigger when clicking anywhere in the drop zone area
+        dropZone.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
 
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.add('dragover');
         });
 
-        dropZone.addEventListener('dragleave', () => {
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.remove('dragover');
         });
 
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
         });

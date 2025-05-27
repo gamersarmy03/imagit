@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imagit - Image Upload Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.10/babel.min.js"></script>
+  <script src="https://unpkg.com/aws-sdk@2.1411.0/dist/aws-sdk.min.js"></script>
+  <script src="https://unpkg.com/appwrite@13.0.1/dist/index.umd.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Appwrite configuration
+    const client = new Appwrite.Client();
+    client
+      .setEndpoint('https://cloud.appwrite.io/v1') // Replace with your Appwrite endpoint
+      .setProject('YOUR_PROJECT_ID'); // Replace with your Appwrite project ID
+    const storage = new Appwrite.Storage(client);
+    const databases = new Appwrite.Dat(client);
+
+    // AWS S3 configuration for Internet Archive
+    AWS.config.update({
+      accessKeyId: 'jBR7XOg62J8mIUEg',
+      secretAccessKey: 'pPzeXleaI98sZLhe',
+      region: 'us-east-1',
+      endpoint: 'https://s3.us.archive.org',
+      s3ForcePathStyle: true
+    });
+    const s3 = new AWS.S3();
+
+    const App = () => {
+      const [isUploadOpen, setIsUploadOpen] = useState(false);
+      const [files, setFiles] = useState([]);
+      const [title, setTitle] = useState('');
+      const [images, setImages] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [error, setError] = useState(null);
+
+      // Fetch images from Appwrite on mount
+      useEffect(() => {
+        const fetchImages = async () => {
+          try {
+            const response = await databases.listDocuments('YOUR_DATABASE_ID', 'uploads112233');
+            setImages(response.documents);
+          } catch (err) {
+            setError('Failed to load images');
+            console.error(err);
+          }
+        };
+        fetchImages();
+      }, []);
+
+      // Handle file selection
+      const handleFileChange = (e) => {
+        setFiles(Array.from(e.target.files));
+      };
+
+      // Handle image upload
+      const handleUpload = async (e) => {
+        e.preventDefault();
+        if (!files.length || !title) {
+          setError('Please select at least one image and enter a title');
+          return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          for (const file of files) {
+            const identifier = `imagit-${Date.now()}-${file.name}`;
+            const params = {
+              Bucket: 'imagit-uploads',
+              Key: identifier,
+              Body: file,
+              ContentType: file.type,
+              Metadata: { title }
+            };
+
+            // Upload to Internet Archive S3
+            await s3.upload(params).promise();
+
+            // Store metadata in Appwrite
+            const metadata = {
+              title,
+              identifier,
+              url: `https://archive.org/download/${identifier}/${file.name}`,
+              mediaType: file.type,
+              createdAt: new Date().toISOString()
+            };
+
+            await databases.createDocument(
+              'YOUR_DATABASE_ID',
+              'uploads112233',
+              Appwrite.ID.unique(),
+              metadata,
+              ['role:all'], // Read permission
+              ['role:all']  // Write permission
+            );
+          }
+
+          // Refresh image list
+          const response = await databases.listDocuments('YOUR_DATABASE_ID', 'uploads112233');
+          setImages(response.documents);
+          setIsUploadOpen(false);
+          setFiles([]);
+          setTitle('');
+        } catch (err) {
+          setError('Upload failed. Please try again.');
+          console.error(err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-900">
+          {/* Header */}
+          <header className="bg-gray-800 shadow-lg">
+            <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-indigo-400">Imagit</h1>
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+              >
+                Upload
+              </button>
+            </div>
+          </header>
+
+          {/* Upload Popup */}
+          {isUploadOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-semibold mb-4 text-indigo-400">Upload Images</h2>
+                <form onSubmit={handleUpload}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Title</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="Enter album title"
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Select Images</label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    />
+                  </div>
+                  {error && <p className="text-red-500 mb-4">{error}</p>}
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadOpen(false)}
+                      className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition duration-300"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50"
+                    >
+                      {isLoading ? 'Uploading...' : 'Upload'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Gallery */}
+          <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-semibold mb-6 text-indigo-400">Uploaded Albums</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {images.map((image) => (
+                <div key={image.$id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition duration-300">
+                  <img
+                    src={image.url}
+                    alt={image.title}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => (e.target.src = 'https://via.placeholder.com/150')}
+                  />
+                  <div className="p-4">
+                    <h3 className="text-lg font-medium text-indigo-300">{image.title}</h3>
+                    <p className="text-sm text-gray-400">{new Date(image.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {images.length === 0 && !isLoading && (
+              <p className="text-center text-gray-400">No images uploaded yet.</p>
+            )}
+          </main>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

@@ -36,6 +36,7 @@
   </div>
 
   <script>
+  document.addEventListener('DOMContentLoaded', () => {
     const uploadBtn = document.getElementById('uploadBtn');
     const uploadModal = document.getElementById('uploadModal');
     const fileInput = document.getElementById('fileInput');
@@ -45,37 +46,38 @@
     const client = new Appwrite.Client()
       .setEndpoint('https://cloud.appwrite.io/v1')
       .setProject('imagit112233');
+
     const database = new Appwrite.Databases(client);
 
-    uploadBtn.onclick = () => uploadModal.classList.remove('hidden');
-    function closeModal() {
+    uploadBtn.addEventListener('click', () => {
+      uploadModal.classList.remove('hidden');
+    });
+
+    window.closeModal = function () {
       uploadModal.classList.add('hidden');
       fileInput.value = '';
       titleInput.value = '';
-    }
+    };
 
-    async function uploadImages() {
+    window.uploadImages = async function () {
       const files = fileInput.files;
       const title = titleInput.value.trim();
       if (!files.length || !title) return alert('Please select images and enter a title.');
 
       for (const file of files) {
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('title', title);
-        formData.append('access', 'public');
-        formData.append('bucket', '/imagit-images/');
-
+        const identifier = `${title.replace(/\\s+/g, '_')}_${Date.now()}`;
         const timestamp = new Date().toISOString();
-        const identifier = `${title.replace(/\s+/g, '_')}_${Date.now()}`;
+
+        formData.append('key', `${identifier}/${file.name}`);
+        formData.append('AWSAccessKeyId', 'jBR7XOg62J8mIUEg');
+        formData.append('acl', 'public-read');
+        formData.append('policy', ''); // Required: Generate & include policy + signature properly
+        formData.append('signature', '');
+        formData.append('file', file);
 
         try {
-          const response = await axios.post('https://s3.us.archive.org', formData, {
-            headers: {
-              'Authorization': 'LOW jBR7XOg62J8mIUEg:pPzeXleaI98sZLhe'
-            }
-          });
-
+          // Placeholder: You must generate proper policy & signature server-side
           const url = `https://archive.org/download/${identifier}/${file.name}`;
           await database.createDocument('uploads1122', 'uploads112233', identifier, {
             title,
@@ -97,7 +99,8 @@
         }
       }
       closeModal();
-    }
-  </script>
+    };
+  });
+</script>
 </body>
 </html>

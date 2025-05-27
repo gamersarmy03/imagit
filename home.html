@@ -9,7 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.10/babel.min.js"></script>
   <script src="https://unpkg.com/aws-sdk@2.1411.0/dist/aws-sdk.min.js"></script>
-  <script src="https://unpkg.com/appwrite@13.0.1/dist/index.umd.min.js"></script>
+  <script src="https://unpkg.com/@appwrite.io/sdk@13.0.1/dist/index.umd.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans">
   <div id="root"></div>
@@ -19,9 +19,8 @@
     // Appwrite configuration
     const client = new Appwrite.Client();
     client
-      .setEndpoint('https://cloud.appwrite.io/v1') // Replace with your Appwrite endpoint
-      .setProject('YOUR_PROJECT_ID'); // Replace with your Appwrite project ID
-    const storage = new Appwrite.Storage(client);
+      .setEndpoint('https://cloud.appwrite.io/v1')
+      .setProject('imagit112233');
     const databases = new Appwrite.Dat(client);
 
     // AWS S3 configuration for Internet Archive
@@ -42,15 +41,17 @@
       const [isLoading, setIsLoading] = useState(false);
       const [error, setError] = useState(null);
 
-      // Fetch images from Appwrite on mount
+      // Fetch images from Appwrite
       useEffect(() => {
+        console.log('App mounted, fetching images...');
         const fetchImages = async () => {
           try {
-            const response = await databases.listDocuments('YOUR_DATABASE_ID', 'uploads112233');
+            const response = await databases.listDocuments('uploads1122', 'uploads112233');
+            console.log('Fetched images:', response.documents);
             setImages(response.documents);
           } catch (err) {
-            setError('Failed to load images');
-            console.error(err);
+            setError('Failed to load images. Check console for details.');
+            console.error('Fetch error:', err);
           }
         };
         fetchImages();
@@ -58,7 +59,9 @@
 
       // Handle file selection
       const handleFileChange = (e) => {
-        setFiles(Array.from(e.target.files));
+        const selectedFiles = Array.from(e.target.files);
+        setFiles(selectedFiles);
+        console.log('Files selected:', selectedFiles.map(f => f.name));
       };
 
       // Handle image upload
@@ -83,10 +86,10 @@
               Metadata: { title }
             };
 
-            // Upload to Internet Archive S3
+            console.log('Uploading to S3:', identifier);
             await s3.upload(params).promise();
+            console.log('S3 upload successful:', identifier);
 
-            // Store metadata in Appwrite
             const metadata = {
               title,
               identifier,
@@ -95,25 +98,26 @@
               createdAt: new Date().toISOString()
             };
 
+            console.log('Saving metadata to Appwrite:', metadata);
             await databases.createDocument(
-              'YOUR_DATABASE_ID',
+              'uploads1122',
               'uploads112233',
               Appwrite.ID.unique(),
               metadata,
-              ['role:all'], // Read permission
-              ['role:all']  // Write permission
+              ['role:all'],
+              ['role:all']
             );
+            console.log('Metadata saved:', identifier);
           }
 
-          // Refresh image list
-          const response = await databases.listDocuments('YOUR_DATABASE_ID', 'uploads112233');
+          const response = await databases.listDocuments('uploads1122', 'uploads112233');
           setImages(response.documents);
           setIsUploadOpen(false);
           setFiles([]);
           setTitle('');
         } catch (err) {
-          setError('Upload failed. Please try again.');
-          console.error(err);
+          setError('Upload failed. Check console for details.');
+          console.error('Upload error:', err);
         } finally {
           setIsLoading(false);
         }
@@ -185,31 +189,42 @@
           {/* Gallery */}
           <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl font-semibold mb-6 text-indigo-400">Uploaded Albums</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {images.map((image) => (
-                <div key={image.$id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition duration-300">
-                  <img
-                    src={image.url}
-                    alt={image.title}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => (e.target.src = 'https://via.placeholder.com/150')}
-                  />
-                  <div className="p-4">
-                    <h3 className="text-lg font-medium text-indigo-300">{image.title}</h3>
-                    <p className="text-sm text-gray-400">{new Date(image.createdAt).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {images.length === 0 && !isLoading && (
+            {isLoading ? (
+              <p className="text-center text-gray-400">Loading...</p>
+            ) : images.length === 0 ? (
               <p className="text-center text-gray-400">No images uploaded yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {images.map((image) => (
+                  <div key={image.$id} className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition duration-300">
+                    <img
+                      src={image.url}
+                      alt={image.title}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        console.error('Image load error:', image.url);
+                        e.target.src = 'https://via.placeholder.com/150';
+                      }}
+                    />
+                    <div className="p-4">
+                      <h3 className="text-lg font-medium text-indigo-300">{image.title}</h3>
+                      <p className="text-sm text-gray-400">{new Date(image.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </main>
         </div>
       );
     };
 
-    ReactDOM.render(<App />, document.getElementById('root'));
+    console.log('Rendering React app');
+    try {
+      ReactDOM.render(<App />, document.getElementById('root'));
+    } catch (err) {
+      console.error('React render error:', err);
+    }
   </script>
 </body>
 </html>

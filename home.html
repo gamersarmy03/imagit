@@ -3,626 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Imagit - High-End Image Hosting</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Imagit - Premium Image Upload Platform</title>
     <style>
-        /* General Body Styles */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            background-color: #1a1a2e; /* Dark background */
-            color: #e0e0e0; /* Light text color */
-            line-height: 1.6;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Navbar */
+        body {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
         .navbar {
+            background: #2c2c2c;
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.5rem 3rem;
-            background-color: #0f0f1a; /* Even darker for navbar */
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            position: sticky;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            position: fixed;
+            width: 100%;
             top: 0;
             z-index: 1000;
         }
 
-        .navbar .logo {
-            font-family: 'Georgia', serif;
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #ffcc00; /* Gold accent */
+        .navbar h1 {
+            font-size: 1.8rem;
+            color: #ffd700;
             letter-spacing: 2px;
         }
 
-        .navbar .nav-button {
-            background-color: #ffcc00; /* Gold button */
-            color: #1a1a2e;
-            border: none;
-            padding: 0.8rem 1.8rem;
-            border-radius: 50px;
+        .upload-btn {
+            background: #ffd700;
+            color: #1a1a1a;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 1.1rem;
             font-weight: bold;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            transition: transform 0.3s ease, background 0.3s ease;
         }
 
-        .navbar .nav-button:hover {
-            background-color: #e6b800; /* Darker gold on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.3);
+        .upload-btn:hover {
+            background: #e6c200;
+            transform: scale(1.05);
         }
 
-        /* Container */
         .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-
-        /* Hero Section */
-        .hero-section {
-            text-align: center;
-            padding: 5rem 0;
-            background: linear-gradient(45deg, #1f283d, #0f182a); /* Subtle gradient */
-            border-radius: 15px;
-            margin-bottom: 3rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-section h1 {
-            font-size: 3.8rem;
-            color: #ffcc00;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
-            font-weight: 700;
-        }
-
-        .hero-section p {
-            font-size: 1.6rem;
-            color: #c0c0c0;
-            max-width: 700px;
-            margin: 0 auto;
-            font-weight: 300;
-        }
-
-        /* Image Gallery */
-        .image-gallery {
+            margin-top: 80px;
+            padding: 2rem;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px;
-            padding: 2rem 0;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
 
-        .gallery-item {
-            background-color: #2a2a4a; /* Darker card background */
+        .image-card {
+            background: #2c2c2c;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
         }
 
-        .gallery-item:hover {
+        .image-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8);
         }
 
-        .gallery-item img {
+        .image-card img {
             width: 100%;
-            height: 250px;
+            height: 200px;
             object-fit: cover;
-            display: block;
-            border-bottom: 1px solid #3a3a5a;
         }
 
-        .gallery-item-info {
-            padding: 1.5rem;
+        .image-card h3 {
+            padding: 1rem;
+            font-size: 1.2rem;
+            color: #ffd700;
         }
 
-        .gallery-item-info h3 {
-            margin-top: 0;
-            margin-bottom: 0.8rem;
-            font-size: 1.4rem;
-            color: #ffcc00;
-        }
-
-        .gallery-item-info p {
-            font-size: 0.95rem;
+        .image-card p {
+            padding: 0 1rem 1rem;
+            font-size: 0.9rem;
             color: #b0b0b0;
-            margin-bottom: 0.5rem;
         }
 
-        .gallery-item-info a {
-            color: #88aaff; /* Link color */
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s ease;
-        }
-
-        .gallery-item-info a:hover {
-            color: #6688dd;
-            text-decoration: underline;
-        }
-
-        .gallery-placeholder {
-            grid-column: 1 / -1; /* Span all columns */
-            text-align: center;
-            padding: 5rem 0;
-            font-size: 1.5rem;
-            color: #808080;
-            background-color: #20203a;
-            border-radius: 10px;
-            margin-top: 2rem;
-        }
-
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 2.5rem;
-            background-color: #0f0f1a;
-            color: #707070;
-            font-size: 0.9rem;
-            margin-top: 5rem;
-            border-top: 1px solid #2a2a4a;
-        }
-
-        /* Modal */
         .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 2000; /* Sit on top */
-            left: 0;
+            display: none;
+            position: fixed;
             top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0, 0, 0, 0.7); /* Black w/ opacity */
-            backdrop-filter: blur(8px); /* Frosted glass effect */
-            display: flex;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
             justify-content: center;
             align-items: center;
         }
 
         .modal-content {
-            background-color: #282a36; /* Slightly lighter dark for modal */
-            margin: auto;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            background: #2c2c2c;
+            padding: 2rem;
+            border-radius: 10px;
             width: 90%;
-            max-width: 600px;
-            position: relative;
-            animation: fadeIn 0.4s ease-out;
-            border: 1px solid #444; /* Subtle border */
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .close-button {
-            color: #aaa;
-            position: absolute;
-            top: 20px;
-            right: 25px;
-            font-size: 35px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-
-        .close-button:hover,
-        .close-button:focus {
-            color: #fff;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         .modal-content h2 {
-            color: #ffcc00;
-            text-align: center;
-            margin-bottom: 2.5rem;
-            font-size: 2.2rem;
-            font-weight: 600;
+            color: #ffd700;
+            margin-bottom: 1rem;
         }
 
-        .form-group {
-            margin-bottom: 1.8rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.8rem;
-            font-size: 1.1rem;
-            color: #c0c0c0;
-            font-weight: 500;
-        }
-
-        .form-group input[type="text"] {
-            width: calc(100% - 20px);
-            padding: 12px 10px;
+        .modal-content input[type="text"],
+        .modal-content input[type="file"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
             border: 1px solid #444;
-            border-radius: 8px;
-            background-color: #3a3a4a;
+            background: #3c3c3c;
             color: #e0e0e0;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 5px;
         }
 
-        .form-group input[type="text"]:focus {
-            border-color: #ffcc00;
-            box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
-        }
-
-        .file-label {
-            background-color: #4a4a6e; /* Darker blue-purple for file button */
-            color: #e0e0e0;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            transition: background-color 0.3s ease;
-        }
-
-        .file-label i {
-            font-size: 1.2rem;
-        }
-
-        .file-label:hover {
-            background-color: #5a5a8e;
-        }
-
-        .file-list {
-            margin-top: 15px;
-            padding: 10px;
-            border: 1px dashed #555;
-            border-radius: 8px;
-            min-height: 50px;
-            background-color: #303040;
-            color: #c0c0c0;
-            font-size: 0.95rem;
-        }
-
-        .file-list p {
-            margin: 5px 0;
-        }
-
-        .submit-button {
-            width: 100%;
-            padding: 15px;
-            background-color: #007bff; /* Blue button */
-            color: white;
+        .modal-content button {
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
             border: none;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-weight: bold;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            margin-top: 2rem;
+            font-weight: bold;
         }
 
-        .submit-button:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+        .modal-content .upload {
+            background: #ffd700;
+            color: #1a1a1a;
         }
 
-        .progress-bar-container {
-            width: 100%;
-            background-color: #303040;
-            border-radius: 5px;
-            height: 10px;
-            margin-top: 2rem;
-            overflow: hidden;
-            display: none; /* Hidden by default */
+        .modal-content .upload:hover {
+            background: #e6c200;
         }
 
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background-color: #28a745; /* Green progress bar */
-            border-radius: 5px;
-            transition: width 0.3s ease-in-out;
+        .modal-content .cancel {
+            background: #444;
+            color: #e0e0e0;
         }
 
-        .status-message {
+        .modal-content .cancel:hover {
+            background: #555;
+        }
+
+        .loading, .error {
+            display: none;
             text-align: center;
-            margin-top: 1rem;
-            font-size: 1rem;
-            /* Color set dynamically by JS for success/error */
-            min-height: 20px; /* To prevent layout shift */
+            padding: 1rem;
+            color: #ffd700;
+        }
+
+        .error {
+            color: #ff4d4d;
         }
     </style>
 </head>
 <body>
-    <header class="navbar">
-        <div class="logo">Imagit</div>
-        <nav>
-            <button id="uploadButton" class="nav-button">
-                <i class="fas fa-cloud-upload-alt"></i> Upload
-            </button>
-        </nav>
-    </header>
+    <div class="navbar">
+        <h1>Imagit</h1>
+        <div class="upload-btn">Upload</div>
+    </div>
 
-    <main class="container">
-        <section class="hero-section">
-            <h1>Capture. Share. Preserve.</h1>
-            <p>Your premium platform for timeless image preservation.</p>
-        </section>
+    <div class="container" id="imageContainer"></div>
 
-        <section id="gallery" class="image-gallery">
-            <div class="gallery-placeholder">
-                <p>No images uploaded yet. Be the first to share!</p>
-            </div>
-        </section>
-    </main>
-
-    <footer class="footer">
-        <p>&copy; 2025 Imagit. All rights reserved.</p>
-    </footer>
-
-    <div id="uploadModal" class="modal">
+    <div class="modal" id="uploadModal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
             <h2>Upload Images</h2>
-            <form id="uploadForm">
-                <div class="form-group">
-                    <label for="imageTitle">Album Title (Optional):</label>
-                    <input type="text" id="imageTitle" placeholder="Enter a title for your images/album">
-                </div>
-                <div class="form-group">
-                    <label for="imageFiles" class="file-label">
-                        <i class="fas fa-folder-open"></i> Select Files
-                    </label>
-                    <input type="file" id="imageFiles" multiple accept="image/*" style="display: none;">
-                    <div id="fileList" class="file-list"></div>
-                </div>
-                <button type="submit" class="submit-button">Upload Now</button>
-            </form>
-            <div id="uploadProgress" class="progress-bar-container">
-                <div class="progress-bar"></div>
-            </div>
-            <p id="uploadStatus" class="status-message"></p>
+            <input type="text" id="imageTitle" placeholder="Enter Album Title">
+            <input type="file" id="imageFiles" accept="image/*" multiple>
+            <div class="loading" id="loading">Uploading images...</div>
+            <div class="error" id="error">Failed to upload images. Check console or try again.</div>
+            <button class="upload" onclick="uploadImages()">Upload</button>
+            <button class="cancel" onclick="closeModal()">Cancel</button>
         </div>
     </div>
 
+    <script src="https://unpkg.com/appwrite@13.0.0/dist/iife/sdk.min.js"></script>
     <script>
-        // --- DOM Elements ---
-        const uploadButton = document.getElementById('uploadButton');
+        const client = new Appwrite.Client()
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('imagit112233');
+
+        const storage = new Appwrite.Storage(client);
+        const databases = new Appwrite.Databases(client);
+        const ACCESS_KEY = 'jBR7XOg62J8mIUEg';
+        const SECRET_KEY = 'pPzeXleaI98sZLhe';
+        const IA_ENDPOINT = 'https://s3.us.archive.org';
+
         const uploadModal = document.getElementById('uploadModal');
-        const closeButton = document.querySelector('.close-button');
-        const uploadForm = document.getElementById('uploadForm');
-        const imageTitleInput = document.getElementById('imageTitle');
-        const imageFilesInput = document.getElementById('imageFiles');
-        const fileListDisplay = document.getElementById('fileList');
-        const submitButton = uploadForm.querySelector('.submit-button');
-        const uploadProgressContainer = document.getElementById('uploadProgress');
-        const progressBar = uploadProgressContainer.querySelector('.progress-bar');
-        const uploadStatus = document.getElementById('uploadStatus');
-        const imageGallery = document.getElementById('gallery');
-        const galleryPlaceholder = document.querySelector('.gallery-placeholder');
+        const imageContainer = document.getElementById('imageContainer');
+        const uploadBtn = document.querySelector('.upload-btn');
+        const imageTitle = document.getElementById('imageTitle');
+        const imageFiles = document.getElementById('imageFiles');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
 
-        // --- Event Listeners ---
-        uploadButton.addEventListener('click', () => {
-            uploadModal.style.display = 'flex'; // Show modal
+        uploadBtn.addEventListener('click', () => {
+            uploadModal.style.display = 'flex';
+            imageTitle.value = '';
+            imageFiles.value = '';
+            loading.style.display = 'none';
+            error.style.display = 'none';
         });
 
-        closeButton.addEventListener('click', () => {
-            uploadModal.style.display = 'none'; // Hide modal
-            resetUploadForm();
-        });
+        function closeModal() {
+            uploadModal.style.display = 'none';
+        }
 
-        // Close modal when clicking outside of it
-        window.addEventListener('click', (event) => {
-            if (event.target === uploadModal) {
-                uploadModal.style.display = 'none';
-                resetUploadForm();
-            }
-        });
+        async function uploadImages() {
+            const title = imageTitle.value.trim();
+            const files = imageFiles.files;
 
-        imageFilesInput.addEventListener('change', () => {
-            displaySelectedFiles(imageFilesInput.files);
-        });
-
-        uploadForm.addEventListener('submit', (event) => {
-            event.preventDefault(); // Prevent default form submission
-            handleUpload();
-        });
-
-        // --- Functions ---
-
-        function displaySelectedFiles(files) {
-            fileListDisplay.innerHTML = ''; // Clear previous list
-            if (files.length === 0) {
-                fileListDisplay.innerHTML = '<p>No files selected.</p>';
+            if (!title || files.length === 0) {
+                error.textContent = 'Please enter a title and select at least one image.';
+                error.style.display = 'block';
                 return;
             }
 
-            const fileNames = Array.from(files).map(file => file.name);
-            fileNames.forEach(name => {
-                const p = document.createElement('p');
-                p.textContent = name;
-                fileListDisplay.appendChild(p);
-            });
-        }
-
-        function resetUploadForm() {
-            uploadForm.reset();
-            fileListDisplay.innerHTML = '<p>No files selected.</p>';
-            uploadStatus.textContent = '';
-            uploadStatus.style.color = '#ffcc00'; // Reset to default (gold)
-            progressBar.style.width = '0%';
-            uploadProgressContainer.style.display = 'none';
-            submitButton.disabled = false;
-            submitButton.textContent = 'Upload Now';
-        }
-
-        async function handleUpload() {
-            const files = imageFilesInput.files;
-            const title = imageTitleInput.value.trim();
-
-            if (files.length === 0) {
-                uploadStatus.textContent = 'Please select at least one image.';
-                uploadStatus.style.color = '#ff6347'; // Tomato red for error
-                return;
-            }
-
-            submitButton.disabled = true;
-            submitButton.textContent = 'Uploading...';
-            uploadStatus.textContent = 'Preparing files for upload...';
-            uploadStatus.style.color = '#ffcc00'; // Gold for pending
-            uploadProgressContainer.style.display = 'block';
-            progressBar.style.width = '0%';
-
-            const formData = new FormData();
-            formData.append('title', title);
-            for (let i = 0; i < files.length; i++) {
-                formData.append('images', files[i]); // 'images' is the key your backend will expect for file array
-            }
+            loading.style.display = 'block';
+            error.style.display = 'none';
 
             try {
-                // --- IMPORTANT: This is where you would make an API call to your backend ---
-                // You MUST replace '/api/upload' with the actual URL of your backend's upload endpoint.
-                // If your backend is running on a different port (e.g., http://localhost:3000),
-                // you will need to specify the full URL here (e.g., 'http://localhost:3000/api/upload')
-                // and ensure your backend has CORS enabled if running on different origins.
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData,
-                    // If you have user authentication, add headers like 'Authorization'
-                    // headers: {
-                    //     'Authorization': `Bearer ${yourAuthToken}`
-                    // }
-                });
+                for (let file of files) {
+                    const identifier = `imagit_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+                    const url = `${IA_ENDPOINT}/${identifier}/${file.name}`;
 
-                // Read the response text first in case it's not JSON
-                const responseText = await response.text();
-                let result;
+                    // Upload to Internet Archive
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const response = await fetch(`${IA_ENDPOINT}/${identifier}/${file.name}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `LOW ${ACCESS_KEY}:${SECRET_KEY}`,
+                            'Accept': 'application/json',
+                            'x-amz-auto-make-bucket': '1',
+                            'x-archive-meta-title': title,
+                            'x-archive-meta-mediatype': 'image'
+                        },
+                        body: file
+                    });
 
-                try {
-                    // Attempt to parse as JSON
-                    result = JSON.parse(responseText);
-                } catch (jsonError) {
-                    // If parsing fails, it means the response was not valid JSON
-                    console.error('JSON parsing error:', jsonError);
-                    console.error('Received non-JSON response:', responseText);
-                    throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 100)}...`);
+                    if (!response.ok) throw new Error('Failed to upload to Internet Archive');
+
+                    // Store metadata in Appwrite
+                    await databases.createDocument(
+                        'uploads1122',
+                        'uploads112233',
+                        Appwrite.ID.unique(),
+                        {
+                            title: title,
+                            identifier: identifier,
+                            url: url,
+                            mediaType: 'image',
+                            createdAt: new Date().toISOString()
+                        }
+                    );
                 }
 
-                if (!response.ok) {
-                    // If response.ok is false (e.g., 4xx or 5xx status codes)
-                    throw new Error(result.message || `Upload failed with status ${response.status}.`);
-                }
-
-                console.log('Upload successful:', result);
-
-                uploadStatus.textContent = 'Upload successful!';
-                uploadStatus.style.color = '#28a745'; // Green for success
-                progressBar.style.width = '100%';
-
-                // Assuming your backend returns an array of uploaded image data
-                if (result.uploadedImages && result.uploadedImages.length > 0) {
-                    // Clear existing gallery items if you want only newly uploaded ones
-                    // Or keep adding if you want to prepend/append
-                    // imageGallery.innerHTML = ''; // Uncomment to clear existing
-                    result.uploadedImages.forEach(image => addImageToGallery(image));
-                    galleryPlaceholder.style.display = 'none'; // Hide placeholder if images are loaded
-                }
-
-                setTimeout(() => {
-                    uploadModal.style.display = 'none';
-                    resetUploadForm();
-                }, 2000); // Close modal after 2 seconds
-                
-            } catch (error) {
-                console.error('Upload error:', error);
-                uploadStatus.textContent = `Upload failed: ${error.message}`;
-                uploadStatus.style.color = '#dc3545'; // Red for error
-                progressBar.style.width = '0%'; // Reset progress bar on error
-                submitButton.disabled = false;
-                submitButton.textContent = 'Try Again';
+                loading.style.display = 'none';
+                closeModal();
+                loadImages();
+            } catch (err) {
+                console.error(err);
+                loading.style.display = 'none';
+                error.style.display = 'block';
             }
         }
 
-        // Function to dynamically add images to the gallery
-        function addImageToGallery(imageData) {
-            const galleryItem = document.createElement('div');
-            galleryItem.classList.add('gallery-item');
-
-            // Default image if no valid URL is provided or if it's not an image
-            const imageUrl = imageData.url || 'https://via.placeholder.com/300x250?text=No+Image';
-
-            galleryItem.innerHTML = `
-                <img src="${imageUrl}" alt="${imageData.title || 'Uploaded Image'}">
-                <div class="gallery-item-info">
-                    <h3>${imageData.title || 'Untitled Album/Image'}</h3>
-                    <p>Identifier: ${imageData.identifier || 'N/A'}</p>
-                    <p>Uploaded: ${new Date(imageData.createdAt).toLocaleString()}</p>
-                    <a href="${imageUrl}" target="_blank">View Original</a>
-                </div>
-            `;
-            imageGallery.prepend(galleryItem); // Add to the beginning of the gallery
-        }
-
-
-        // --- Initial Load: Fetch existing images from Appwrite (via your backend) ---
         async function loadImages() {
             try {
-                // Your backend would fetch data from Appwrite's 'uploads112233' collection
-                // and return it to the frontend.
-                // You MUST replace '/api/images' with the actual URL of your backend's image listing endpoint.
-                // If your backend is running on a different port (e.g., http://localhost:3000),
-                // you will need to specify the full URL here (e.g., 'http://localhost:3000/api/images').
-                const response = await fetch('/api/images');
-                
-                const responseText = await response.text();
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                } catch (jsonError) {
-                    console.error('JSON parsing error for loadImages:', jsonError);
-                    console.error('Received non-JSON response for loadImages:', responseText);
-                    throw new Error(`Server returned non-JSON response for images: ${responseText.substring(0, 100)}...`);
-                }
-
-                if (!response.ok) {
-                    throw new Error(data.message || `Failed to fetch images with status ${response.status}.`);
-                }
-                const { images } = data; // Assuming backend returns { images: [...] }
-
-                if (images && images.length > 0) {
-                    galleryPlaceholder.style.display = 'none'; // Hide placeholder
-                    // Clear existing gallery items before adding fetched ones to prevent duplicates on refresh
-                    imageGallery.innerHTML = '';
-                    images.forEach(image => addImageToGallery(image));
-                } else {
-                    galleryPlaceholder.style.display = 'block'; // Show placeholder if no images
-                }
-
-            } catch (error) {
-                console.error('Error loading images:', error);
-                imageGallery.innerHTML = `<p class="status-message" style="color: #dc3545;">Failed to load images: ${error.message}. Please try again later.</p>`;
-                galleryPlaceholder.style.display = 'none'; // Hide placeholder as we have an error message
+                const { documents } = await databases.listDocuments('uploads1122', 'uploads112233');
+                imageContainer.innerHTML = '';
+                documents.forEach(doc => {
+                    const card = document.createElement('div');
+                    card.className = 'image-card';
+                    card.innerHTML = `
+                        <img src="${doc.url}" alt="${doc.title}">
+                        <h3>${doc.title}</h3>
+                        <p>Uploaded: ${new Date(doc.createdAt).toLocaleDateString()}</p>
+                    `;
+                    imageContainer.appendChild(card);
+                });
+            } catch (err) {
+                console.error('Failed to load images:', err);
             }
         }
 
-        // Load images when the page loads
-        document.addEventListener('DOMContentLoaded', loadImages);
+        // Load images on page load
+        loadImages();
     </script>
 </body>
 </html>

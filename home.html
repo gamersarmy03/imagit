@@ -362,7 +362,8 @@
             <div class="file-drop-zone" id="dropZone">
                 <p style="font-size: 1.2rem; margin-bottom: 10px;">📁 Drop files here or click to browse</p>
                 <p style="color: #888;">Support for single or multiple images</p>
-                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+                <button type="button" id="browseBtn" style="background: rgba(102, 126, 234, 0.8); border: none; padding: 10px 20px; border-radius: 25px; color: white; margin-top: 15px; cursor: pointer;">Browse Files</button>
+                <input type="file" id="fileInput" multiple accept="image/*" style="position: absolute; left: -9999px; opacity: 0;">
             </div>
 
             <div id="selectedFiles"></div>
@@ -419,17 +420,32 @@
         // File drop zone functionality
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
 
-        // Make sure file input triggers when drop zone is clicked
+        // Multiple ways to trigger file selection
+        function triggerFileInput() {
+            console.log('Triggering file input...');
+            try {
+                fileInput.click();
+            } catch (error) {
+                console.error('Error triggering file input:', error);
+            }
+        }
+
+        // Browse button click
+        browseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Browse button clicked');
+            triggerFileInput();
+        });
+
+        // Drop zone click
         dropZone.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            fileInput.click();
-        });
-
-        // Also trigger when clicking anywhere in the drop zone area
-        dropZone.addEventListener('mousedown', (e) => {
-            e.preventDefault();
+            console.log('Drop zone clicked');
+            triggerFileInput();
         });
 
         dropZone.addEventListener('dragover', (e) => {
@@ -448,10 +464,12 @@
             e.preventDefault();
             e.stopPropagation();
             dropZone.classList.remove('dragover');
+            console.log('Files dropped:', e.dataTransfer.files.length);
             handleFiles(e.dataTransfer.files);
         });
 
         fileInput.addEventListener('change', (e) => {
+            console.log('File input changed:', e.target.files.length);
             handleFiles(e.target.files);
         });
 

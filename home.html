@@ -344,7 +344,7 @@
             text-align: center;
             margin-top: 1rem;
             font-size: 1rem;
-            color: #ffcc00;
+            /* Color set dynamically by JS for success/error */
             min-height: 20px; /* To prevent layout shift */
         }
     </style>
@@ -465,6 +465,7 @@
             uploadForm.reset();
             fileListDisplay.innerHTML = '<p>No files selected.</p>';
             uploadStatus.textContent = '';
+            uploadStatus.style.color = '#ffcc00'; // Reset to default (gold)
             progressBar.style.width = '0%';
             uploadProgressContainer.style.display = 'none';
             submitButton.disabled = false;
@@ -496,30 +497,38 @@
 
             try {
                 // --- IMPORTANT: This is where you would make an API call to your backend ---
-                // Your backend server will:
-                // 1. Receive the files and title.
-                // 2. Upload files to Internet Archive S3 using your access keys.
-                // 3. Get the public URLs and identifiers from Internet Archive.
-                // 4. Save metadata (title, identifier, URL, mediaType, createdAt) to Appwrite.
-                // 5. Return success/failure and potentially the data of uploaded items.
-
-                // Placeholder for API call
                 // You MUST replace '/api/upload' with the actual URL of your backend's upload endpoint.
+                // If your backend is running on a different port (e.g., http://localhost:3000),
+                // you will need to specify the full URL here (e.g., 'http://localhost:3000/api/upload')
+                // and ensure your backend has CORS enabled if running on different origins.
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData,
-                    // You might need to set headers like 'Authorization' if you have user authentication
+                    // If you have user authentication, add headers like 'Authorization'
                     // headers: {
                     //     'Authorization': `Bearer ${yourAuthToken}`
                     // }
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Upload failed due to a server error.');
+                // Read the response text first in case it's not JSON
+                const responseText = await response.text();
+                let result;
+
+                try {
+                    // Attempt to parse as JSON
+                    result = JSON.parse(responseText);
+                } catch (jsonError) {
+                    // If parsing fails, it means the response was not valid JSON
+                    console.error('JSON parsing error:', jsonError);
+                    console.error('Received non-JSON response:', responseText);
+                    throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 100)}...`);
                 }
 
-                const result = await response.json();
+                if (!response.ok) {
+                    // If response.ok is false (e.g., 4xx or 5xx status codes)
+                    throw new Error(result.message || `Upload failed with status ${response.status}.`);
+                }
+
                 console.log('Upload successful:', result);
 
                 uploadStatus.textContent = 'Upload successful!';
@@ -528,6 +537,9 @@
 
                 // Assuming your backend returns an array of uploaded image data
                 if (result.uploadedImages && result.uploadedImages.length > 0) {
+                    // Clear existing gallery items if you want only newly uploaded ones
+                    // Or keep adding if you want to prepend/append
+                    // imageGallery.innerHTML = ''; // Uncomment to clear existing
                     result.uploadedImages.forEach(image => addImageToGallery(image));
                     galleryPlaceholder.style.display = 'none'; // Hide placeholder if images are loaded
                 }
@@ -574,14 +586,29 @@
                 // Your backend would fetch data from Appwrite's 'uploads112233' collection
                 // and return it to the frontend.
                 // You MUST replace '/api/images' with the actual URL of your backend's image listing endpoint.
+                // If your backend is running on a different port (e.g., http://localhost:3000),
+                // you will need to specify the full URL here (e.g., 'http://localhost:3000/api/images').
                 const response = await fetch('/api/images');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch images.');
+                
+                const responseText = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('JSON parsing error for loadImages:', jsonError);
+                    console.error('Received non-JSON response for loadImages:', responseText);
+                    throw new Error(`Server returned non-JSON response for images: ${responseText.substring(0, 100)}...`);
                 }
-                const { images } = await response.json(); // Assuming backend returns { images: [...] }
+
+                if (!response.ok) {
+                    throw new Error(data.message || `Failed to fetch images with status ${response.status}.`);
+                }
+                const { images } = data; // Assuming backend returns { images: [...] }
 
                 if (images && images.length > 0) {
                     galleryPlaceholder.style.display = 'none'; // Hide placeholder
+                    // Clear existing gallery items before adding fetched ones to prevent duplicates on refresh
+                    imageGallery.innerHTML = '';
                     images.forEach(image => addImageToGallery(image));
                 } else {
                     galleryPlaceholder.style.display = 'block'; // Show placeholder if no images
@@ -589,7 +616,7 @@
 
             } catch (error) {
                 console.error('Error loading images:', error);
-                imageGallery.innerHTML = '<p class="status-message" style="color: #dc3545;">Failed to load images. Please try again later.</p>';
+                imageGallery.innerHTML = `<p class="status-message" style="color: #dc3545;">Failed to load images: ${error.message}. Please try again later.</p>`;
                 galleryPlaceholder.style.display = 'none'; // Hide placeholder as we have an error message
             }
         }

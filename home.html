@@ -1,196 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Imagit - Premium Image Upload Platform</title>
-  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/babel-standalone@7.22.5/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.4.0/dist/axios.min.js"></script>
-  <script src="https://unpkg.com/@appwrite.io/sdk@13.0.1/dist/index.umd.js"></script>
+  <title>Imagit - Upload & Share</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/appwrite/appwrite.min.js"></script>
+  <style>
+    body { background-color: #0d0d0d; color: #e5e7eb; font-family: 'Segoe UI', sans-serif; }
+    .expensive { box-shadow: 0 0 20px rgba(255,255,255,0.1); border-radius: 16px; backdrop-filter: blur(8px); }
+  </style>
 </head>
-<body class="bg-gray-900 text-white font-sans">
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+<body class="min-h-screen flex flex-col">
+  <header class="w-full px-6 py-4 flex justify-between items-center border-b border-gray-800">
+    <h1 class="text-2xl font-bold text-white">Imagit</h1>
+    <button id="uploadBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">Upload</button>
+  </header>
 
-    // Appwrite Configuration
-    const client = new window.Appwrite.Client()
+  <main class="flex-1 p-6">
+    <div id="gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+  </main>
+
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
+    <div class="bg-gray-900 p-6 rounded-xl w-full max-w-md expensive">
+      <h2 class="text-xl font-semibold mb-4">Upload Image(s)</h2>
+      <input type="file" id="fileInput" accept="image/*" multiple class="mb-4 w-full">
+      <input type="text" id="titleInput" placeholder="Enter Title" class="w-full p-2 rounded mb-4 bg-gray-800 text-white">
+      <div class="flex justify-end">
+        <button onclick="closeModal()" class="text-gray-400 mr-4">Cancel</button>
+        <button onclick="uploadImages()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadModal = document.getElementById('uploadModal');
+    const fileInput = document.getElementById('fileInput');
+    const titleInput = document.getElementById('titleInput');
+    const gallery = document.getElementById('gallery');
+
+    const client = new Appwrite.Client()
       .setEndpoint('https://cloud.appwrite.io/v1')
       .setProject('imagit112233');
-    const databases = new window.Appwrite.Databases(client);
+    const database = new Appwrite.Databases(client);
 
-    // Internet Archive S3 Configuration
-    const IA_ACCESS_KEY = 'jBR7XOg62J8mIUEg';
-    const IA_SECRET_KEY = 'pPzeXleaI98sZLhe';
-    const IA_BUCKET = 'imagit-uploads';
+    uploadBtn.onclick = () => uploadModal.classList.remove('hidden');
+    function closeModal() {
+      uploadModal.classList.add('hidden');
+      fileInput.value = '';
+      titleInput.value = '';
+    }
 
-    const App = () => {
-      const [images, setImages] = useState([]);
-      const [isModalOpen, setIsModalOpen] = useState(false);
-      const [selectedFiles, setSelectedFiles] = useState([]);
-      const [title, setTitle] = useState('');
-      const [uploading, setUploading] = useState(false);
+    async function uploadImages() {
+      const files = fileInput.files;
+      const title = titleInput.value.trim();
+      if (!files.length || !title) return alert('Please select images and enter a title.');
 
-      // Fetch images from Appwrite
-      useEffect(() => {
-        const fetchImages = async () => {
-          try {
-            const response = await databases.listDocuments('uploads1122', 'uploads112233');
-            setImages(response.documents);
-          } catch (error) {
-            console.error('Error fetching images:', error);
-          }
-        };
-        fetchImages();
-      }, []);
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        formData.append('access', 'public');
+        formData.append('bucket', '/imagit-images/');
 
-      // Handle file selection
-      const handleFileChange = (e) => {
-        setSelectedFiles([...e.target.files]);
-      };
+        const timestamp = new Date().toISOString();
+        const identifier = `${title.replace(/\s+/g, '_')}_${Date.now()}`;
 
-      // Upload images to Internet Archive and save metadata to Appwrite
-      const handleUpload = async () => {
-        if (!title || selectedFiles.length === 0) {
-          alert('Please provide a title and select at least one image.');
-          return;
-        }
-
-        setUploading(true);
         try {
-          for (const file of selectedFiles) {
-            // Generate unique identifier
-            const identifier = `imagit-${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-            const url = `https://archive.org/download/${identifier}/${file.name}`;
+          const response = await axios.post('https://s3.us.archive.org', formData, {
+            headers: {
+              'Authorization': 'LOW jBR7XOg62J8mIUEg:pPzeXleaI98sZLhe'
+            }
+          });
 
-            // Upload to Internet Archive using S3-like API
-            const formData = new FormData();
-            formData.append('file', file);
-            await axios.put(`https://s3.us.archive.org/${identifier}/${file.name}`, formData, {
-              headers: {
-                Authorization: `LOW ${IA_ACCESS_KEY}:${IA_SECRET_KEY}`,
-                'Content-Type': 'multipart/form-data',
-                'x-amz-auto-make-bucket': '1',
-                'x-archive-meta-title': title,
-                'x-archive-meta-mediatype': 'image',
-              },
-            });
+          const url = `https://archive.org/download/${identifier}/${file.name}`;
+          await database.createDocument('uploads1122', 'uploads112233', identifier, {
+            title,
+            identifier,
+            url,
+            mediaType: file.type,
+            createdAt: timestamp
+          });
 
-            // Save metadata to Appwrite
-            await databases.createDocument(
-              'uploads1122',
-              'uploads112233',
-              window.Appwrite.ID.unique(),
-              {
-                title,
-                identifier,
-                url,
-                mediaType: 'image',
-                createdAt: new Date().toISOString(),
-              }
-            );
-          }
-
-          // Refresh image list
-          const response = await databases.listDocuments('uploads1122', 'uploads112233');
-          setImages(response.documents);
-          setIsModalOpen(false);
-          setTitle('');
-          setSelectedFiles([]);
-        } catch (error) {
-          console.error('Error uploading:', error);
-          alert('Upload failed. Please try again.');
-        } finally {
-          setUploading(false);
+          gallery.innerHTML += `
+            <div class="expensive p-2 bg-gray-800 rounded-xl">
+              <img src="${url}" alt="${title}" class="rounded w-full mb-2">
+              <p class="text-sm text-gray-300">${title}</p>
+            </div>
+          `;
+        } catch (err) {
+          console.error('Upload failed:', err);
+          alert('Failed to upload image.');
         }
-      };
-
-      return (
-        <div className="min-h-screen bg-gray-900">
-          {/* Header */}
-          <header className="bg-gray-800 shadow-lg py-4">
-            <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-              <h1 className="text-3xl font-bold text-amber-400">Imagit</h1>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-amber-500 text-gray-900 px-4 py-2 rounded-md hover:bg-amber-400 transition"
-              >
-                Upload
-              </button>
-            </div>
-          </header>
-
-          {/* Main Content */}
-          <main className="max-w-7xl mx-auto px-4 py-8">
-            <h2 className="text-2xl font-semibold mb-6">Uploaded Images</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {images.map((image) => (
-                <div
-                  key={image.$id}
-                  className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:-translate-y-1"
-                >
-                  <img
-                    src={image.url}
-                    alt={image.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-lg font-medium text-amber-400">{image.title}</h3>
-                    <p className="text-sm text-gray-400">{new Date(image.createdAt).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </main>
-
-          {/* Upload Modal */}
-          {isModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-xl font-semibold mb-4 text-amber-400">Upload Images</h2>
-                <input
-                  type="text"
-                  placeholder="Enter title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full p-2 mb-4 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="w-full p-2 mb-4 bg-gray-700 text-white rounded-md"
-                />
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => setIsModalOpen(false)}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className={`bg-amber-500 text-gray-900 px-4 py-2 rounded-md hover:bg-amber-400 transition ${
-                      uploading ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {uploading ? 'Uploading...' : 'Upload'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    // Render the app
-    ReactDOM.render(<App />, document.getElementById('root'));
+      }
+      closeModal();
+    }
   </script>
 </body>
 </html>

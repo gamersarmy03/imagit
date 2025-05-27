@@ -1,106 +1,174 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Imagit - Upload & Share</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://unpkg.com/appwrite/appwrite.min.js"></script>
-  <style>
-    body { background-color: #0d0d0d; color: #e5e7eb; font-family: 'Segoe UI', sans-serif; }
-    .expensive { box-shadow: 0 0 20px rgba(255,255,255,0.1); border-radius: 16px; backdrop-filter: blur(8px); }
-  </style>
-</head>
-<body class="min-h-screen flex flex-col">
-  <header class="w-full px-6 py-4 flex justify-between items-center border-b border-gray-800">
-    <h1 class="text-2xl font-bold text-white">Imagit</h1>
-    <button id="uploadBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">Upload</button>
-  </header>
-
-  <main class="flex-1 p-6">
-    <div id="gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
-  </main>
-
-  <!-- Upload Modal -->
-  <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden">
-    <div class="bg-gray-900 p-6 rounded-xl w-full max-w-md expensive">
-      <h2 class="text-xl font-semibold mb-4">Upload Image(s)</h2>
-      <input type="file" id="fileInput" accept="image/*" multiple class="mb-4 w-full">
-      <input type="text" id="titleInput" placeholder="Enter Title" class="w-full p-2 rounded mb-4 bg-gray-800 text-white">
-      <div class="flex justify-end">
-        <button onclick="closeModal()" class="text-gray-400 mr-4">Cancel</button>
-        <button onclick="uploadImages()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">Upload</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const uploadBtn = document.getElementById('uploadBtn');
-    const uploadModal = document.getElementById('uploadModal');
-    const fileInput = document.getElementById('fileInput');
-    const titleInput = document.getElementById('titleInput');
-    const gallery = document.getElementById('gallery');
-
-    const client = new Appwrite.Client()
-      .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('imagit112233');
-
-    const database = new Appwrite.Databases(client);
-
-    uploadBtn.addEventListener('click', () => {
-      uploadModal.classList.remove('hidden');
-    });
-
-    window.closeModal = function () {
-      uploadModal.classList.add('hidden');
-      fileInput.value = '';
-      titleInput.value = '';
-    };
-
-    window.uploadImages = async function () {
-      const files = fileInput.files;
-      const title = titleInput.value.trim();
-      if (!files.length || !title) return alert('Please select images and enter a title.');
-
-      for (const file of files) {
-        const formData = new FormData();
-        const identifier = `${title.replace(/\\s+/g, '_')}_${Date.now()}`;
-        const timestamp = new Date().toISOString();
-
-        formData.append('key', `${identifier}/${file.name}`);
-        formData.append('AWSAccessKeyId', 'jBR7XOg62J8mIUEg');
-        formData.append('acl', 'public-read');
-        formData.append('policy', ''); // Required: Generate & include policy + signature properly
-        formData.append('signature', '');
-        formData.append('file', file);
-
-        try {
-          // Placeholder: You must generate proper policy & signature server-side
-          const url = `https://archive.org/download/${identifier}/${file.name}`;
-          await database.createDocument('uploads1122', 'uploads112233', identifier, {
-            title,
-            identifier,
-            url,
-            mediaType: file.type,
-            createdAt: timestamp
-          });
-
-          gallery.innerHTML += `
-            <div class="expensive p-2 bg-gray-800 rounded-xl">
-              <img src="${url}" alt="${title}" class="rounded w-full mb-2">
-              <p class="text-sm text-gray-300">${title}</p>
-            </div>
-          `;
-        } catch (err) {
-          console.error('Upload failed:', err);
-          alert('Failed to upload image.');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagit - Premium Image Upload Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@appwrite.io/sdk@15.0.0/dist/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aws-sdk@2.1410.0/dist/aws-sdk.min.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
         }
-      }
-      closeModal();
-    };
-  });
-</script>
+        .popup {
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        .image-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-900 p-4 flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-white">Imagit</h1>
+        <button id="uploadBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+            Upload
+        </button>
+    </header>
+
+    <!-- Upload Popup -->
+    <div id="uploadPopup" class="popup fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+            <h2 class="text-2xl font-semibold mb-4 text-white">Upload Images</h2>
+            <form id="uploadForm">
+                <input type="text" id="titleInput" placeholder="Enter title" class="w-full p-2 mb-4 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600" required>
+                <input type="file" id="fileInput" accept="image/*" multiple class="w-full p-2 mb-4 bg-gray-700 text-white rounded-lg">
+                <div class="flex justify-end">
+                    <button type="button" id="cancelBtn" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-2">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-6">
+        <div id="imageGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </main>
+
+    <script>
+        // Appwrite configuration
+        const client = new window.Appwrite.Client();
+        client
+            .setEndpoint('https://cloud.appwrite.io/v1')
+            .setProject('imagit112233');
+
+        const database = new window.Appwrite.Databases(client);
+        const collectionId = 'uploads112233';
+
+        // Internet Archive S3 configuration
+        AWS.config.update({
+            accessKeyId: 'jBR7XOg62J8mIUEg',
+            secretAccessKey: 'pPzeXleaI98sZLhe',
+            region: 'us-east-1',
+            endpoint: 'https://s3.us.archive.org',
+            s3ForcePathStyle: true
+        });
+        const s3 = new AWS.S3();
+
+        // Popup handling
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadPopup = document.getElementById('uploadPopup');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const titleInput = document.getElementById('titleInput');
+        const imageGrid = document.getElementById('imageGrid');
+
+        uploadBtn.addEventListener('click', () => {
+            uploadPopup.style.display = 'flex';
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            uploadPopup.style.display = 'none';
+            uploadForm.reset();
+        });
+
+        // Upload handling
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = titleInput.value;
+            const files = fileInput.files;
+
+            if (!title || files.length === 0) {
+                alert('Please provide a title and select at least one image.');
+                return;
+            }
+
+            try {
+                for (const file of files) {
+                    const identifier = `imagit-${Date.now()}-${file.name}`;
+                    const params = {
+                        Bucket: 'imagit-uploads',
+                        Key: identifier,
+                        Body: file,
+                        ContentType: file.type,
+                        ACL: 'public-read'
+                    };
+
+                    // Upload to Internet Archive
+                    await s3.upload(params).promise();
+                    const url = `https://archive.org/download/${params.Bucket}/${identifier}`;
+
+                    // Save metadata to Appwrite
+                    await database.createDocument(
+                        'uploads1122',
+                        collectionId,
+                        'unique()',
+                        {
+                            title,
+                            identifier,
+                            url,
+                            mediaType: file.type,
+                            createdAt: new Date().toISOString()
+                        }
+                    );
+                }
+
+                alert('Images uploaded successfully!');
+                uploadPopup.style.display = 'none';
+                uploadForm.reset();
+                loadImages();
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Error uploading images. Please try again.');
+            }
+        });
+
+        // Load and display images
+        async function loadImages() {
+            try {
+                const response = await database.listDocuments('uploads1122', collectionId);
+                imageGrid.innerHTML = '';
+                response.documents.forEach(doc => {
+                    const card = document.createElement('div');
+                    card.className = 'image-card bg-gray-800 rounded-lg overflow-hidden';
+                    card.innerHTML = `
+                        <img src="${doc.url}" alt="${doc.title}" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-white">${doc.title}</h3>
+                            <p class="text-sm text-gray-400">${new Date(doc.createdAt).toLocaleDateString()}</p>
+                        </div>
+                    `;
+                    imageGrid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading images:', error);
+            }
+        }
+
+        // Initial load
+        loadImages();
+    </script>
 </body>
 </html>

@@ -45,6 +45,7 @@
             cursor: pointer;
             font-weight: bold;
             transition: transform 0.3s ease, background 0.3s ease;
+            user-select: none; /* Prevent text selection on tap */
         }
 
         .upload-btn:hover {
@@ -170,7 +171,7 @@
 <body>
     <div class="navbar">
         <h1>Imagit</h1>
-        <div class="upload-btn">Upload</div>
+        <div class="upload-btn" id="uploadBtn">Upload</div>
     </div>
 
     <div class="container" id="imageContainer"></div>
@@ -201,21 +202,30 @@
 
         const uploadModal = document.getElementById('uploadModal');
         const imageContainer = document.getElementById('imageContainer');
-        const uploadBtn = document.querySelector('.upload-btn');
+        const uploadBtn = document.getElementById('uploadBtn');
         const imageTitle = document.getElementById('imageTitle');
         const imageFiles = document.getElementById('imageFiles');
         const loading = document.getElementById('loading');
         const error = document.getElementById('error');
 
-        uploadBtn.addEventListener('click', () => {
+        function openModal() {
+            console.log('Opening modal'); // Debug log
             uploadModal.style.display = 'flex';
             imageTitle.value = '';
             imageFiles.value = '';
             loading.style.display = 'none';
             error.style.display = 'none';
+        }
+
+        // Add both click and touchstart events for compatibility
+        uploadBtn.addEventListener('click', openModal);
+        uploadBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent default touch behavior
+            openModal();
         });
 
         function closeModal() {
+            console.log('Closing modal'); // Debug log
             uploadModal.style.display = 'none';
         }
 
